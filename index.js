@@ -2,16 +2,25 @@ import express from "express";
 import puppeteer from "puppeteer";
 
 const app = express();
+
+// Accept BOTH JSON objects and raw string bodies from n8n
+app.use(express.text({ limit: "20mb", type: "*/*" }));
 app.use(express.json({ limit: "20mb" }));
 
 app.post("/pdf", async (req, res) => {
-  // FIX: handle stringified JSON from n8n Raw body
-  const payload =
-    typeof req.body === "string"
-      ? JSON.parse(req.body)
-      : req.body;
+  let payload;
 
-  const { bodyHtml, headerHtml, footerHtml } = payload;
+  // HARD FIX: n8n Raw JSON often arrives as string
+  try {
+    payload =
+      typeof req.body === "string"
+        ? JSON.parse(req.body)
+        : req.body;
+  } catch (e) {
+    return res.status(400).json({ error: "Invalid JSON body" });
+  }
+
+  const { bodyHtml, headerHtml, footerHtml } = payload || {};
 
   if (!bodyHtml || !headerHtml || !footerHtml) {
     return res
@@ -29,6 +38,7 @@ app.post("/pdf", async (req, res) => {
 
     await page.emulateMediaType("screen");
 
+    // Body-only HTML
     await page.setContent(bodyHtml, {
       waitUntil: "networkidle0",
     });
