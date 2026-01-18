@@ -9,6 +9,14 @@ app.use(express.json({ limit: "20mb" }));
 
 app.post("/pdf", async (req, res) => {
   let payload;
+  console.log("DEBUG content-type:", req.headers["content-type"]);
+console.log("DEBUG typeof body:", typeof req.body);
+console.log(
+  "DEBUG body preview:",
+  typeof req.body === "string"
+    ? req.body.slice(0, 300)
+    : JSON.stringify(req.body).slice(0, 300)
+);
 
   // HARD FIX: n8n Raw JSON often arrives as string
   try {
