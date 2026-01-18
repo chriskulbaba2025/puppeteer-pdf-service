@@ -5,7 +5,13 @@ const app = express();
 app.use(express.json({ limit: "20mb" }));
 
 app.post("/pdf", async (req, res) => {
-  const { bodyHtml, headerHtml, footerHtml } = req.body;
+  // FIX: handle stringified JSON from n8n Raw body
+  const payload =
+    typeof req.body === "string"
+      ? JSON.parse(req.body)
+      : req.body;
+
+  const { bodyHtml, headerHtml, footerHtml } = payload;
 
   if (!bodyHtml || !headerHtml || !footerHtml) {
     return res
@@ -21,10 +27,8 @@ app.post("/pdf", async (req, res) => {
   try {
     const page = await browser.newPage();
 
-    // Ensure screen styles render correctly
     await page.emulateMediaType("screen");
 
-    // Body-only HTML
     await page.setContent(bodyHtml, {
       waitUntil: "networkidle0",
     });
@@ -33,10 +37,8 @@ app.post("/pdf", async (req, res) => {
       format: "Letter",
       printBackground: true,
       displayHeaderFooter: true,
-
       headerTemplate: headerHtml,
       footerTemplate: footerHtml,
-
       margin: {
         top: "200px",
         bottom: "120px",
